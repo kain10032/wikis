@@ -1,0 +1,23 @@
+FROM centos
+
+RUN rm -f /etc/rpm/macros.image-language-conf && \
+    sed -i '/^override_install_langs=/d' /etc/yum.conf && \
+    yum -y update glibc-common && yum -y reinstall glibc-common && \
+    yum clean all
+
+ENV LANG="ja_JP.UTF-8" \
+    LANGUAGE="ja_JP:ja" \
+    LC_ALL="ja_JP.UTF-8"
+
+RUN yum -y install httpd unzip php
+COPY . /root/
+RUN cd /root/ && \
+    unzip pukiwiki-1.5.2_utf8.zip && \
+    mv pukiwiki-1.5.2_utf8/* /var/www/html && \
+    chown -R apache:apache /var/www/html
+
+# 凍結されないようにする
+RUN mv /var/www/html/pukiwiki.ini.php /tmp/pukiwiki.ini.bk.php && \
+    sed -e 's/$function_freeze = 1;/$function_freeze = 0;/g' /tmp/pukiwiki.ini.bk.php > /var/www/html/pukiwiki.ini.php
+
+CMD /usr/sbin/httpd -DFOREGROUND

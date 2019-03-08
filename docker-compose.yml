@@ -1,0 +1,70 @@
+version: "3"
+services:
+  pukiwiki:
+    image: pukiwiki
+    build: pukiwiki
+    restart: always
+    container_name: pukiwiki
+    ports:
+      - ${PUKIWIKI_PORT}:80
+      
+  mediawiki:
+    image: mediawiki
+    restart: always
+    container_name: mediawiki
+    ports:
+      - ${MEDIAWIKI_PORT}:80
+      
+  dokuwiki:
+    image: bitnami/dokuwiki
+    restart: always
+    container_name: dokuwiki
+    ports:
+      - ${DOKUWIKI_PORT}:80
+    volumes:
+      - dokuwiki_data:/bitnami
+    
+  gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    restart: always
+    hostname: '${HOST}'
+    container_name: gitlab
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://${HOST}:${GITLAB_PORT}'
+        gitlab_rails['gitlab_shell_ssh_port'] = ${GITLAB_SSH_PORT}
+    ports:
+      - '${GITLAB_PORT}:${GITLAB_PORT}'
+      - '${GITLAB_SSH_PORT}:22'
+    privileged: true
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+
+  redmine:
+    image: redmine
+    restart: always
+    container_name: redmine
+    depends_on:
+      - redminedb
+    ports:
+      - '${REDMINE_PORT}:3000'
+    environment:
+      REDMINE_DB_MYSQL: redminedb
+      REDMINE_DB_PASSWORD: example
+
+  redminedb:
+    image: mysql:5.7
+    restart: always
+    container_name: redminedb
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: redmine
+      
+volumes:
+  dokuwiki_data:
+    driver: local
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
